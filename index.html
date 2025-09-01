@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matrix Rain Profissional</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:black; overflow:hidden; font-family:Arial, sans-serif; }
+    canvas { display:block; }
+
+    /* Painel de configuração */
+    .config-panel {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.85);
+      padding:15px;
+      border-radius:12px;
+      color:white;
+      font-size:14px;
+      z-index:10;
+      width:230px;
+      transition: transform 0.3s ease;
+    }
+    .config-panel.hidden { transform: translateX(-250px); }
+    .config-panel label { display:block; margin:6px 0 4px; }
+    .config-panel input, .config-panel select { width:100%; margin-bottom:10px; }
+
+    /* Botão abrir/fechar painel */
+    .toggle-btn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: #222;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      cursor: pointer;
+      z-index:11;
+      font-size:22px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition: background 0.3s ease;
+    }
+    .toggle-btn:hover { background:#444; }
+  </style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<button class="toggle-btn">⚙️</button>
+
+<div class="config-panel hidden" id="configPanel">
+  <label for="colorPicker">🎨 Cor fixa:</label>
+  <input type="color" id="colorPicker" value="#00ff00">
+
+  <label for="fontSizeRange">🔠 Tamanho da letra:</label>
+  <input type="range" id="fontSizeRange" min="10" max="40" value="18">
+
+  <label for="speedRange">⚡ Velocidade da chuva:</label>
+  <input type="range" id="speedRange" min="1" max="15" value="4">
+
+  <label for="densityRange">🌧️ Densidade das gotas:</label>
+  <input type="range" id="densityRange" min="1" max="20" value="3">
+
+  <label for="rainbowMode">🌈 Modo arco-íris:</label>
+  <input type="checkbox" id="rainbowMode">
+
+  <label for="paletteSelect">🎨 Paleta de cores (arco-íris):</label>
+  <select id="paletteSelect">
+    <option value="hsl">HSL padrão</option>
+    <option value="warm">Quente (vermelho/amarelo)</option>
+    <option value="cool">Frio (azul/roxo)</option>
+    <option value="neon">Neon (verde/rosa/azul)</option>
+  </select>
+</div>
+
+<script>
+const c = document.getElementById("matrix");
+const ctx = c.getContext("2d");
+
+// Configurações iniciais
+let fontSize = 18;
+let rainColor = "#0F0";
+let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*".split("");
+let rainbow = false;
+let rainbowHue = 0;
+let speed = 4;
+let density = 3;
+let palette = "hsl";
+
+let columns, drops;
+
+function resizeCanvas() {
+  c.width = window.innerWidth;
+  c.height = window.innerHeight;
+  columns = Math.floor(c.width / fontSize);
+  drops = new Array(columns * density).fill(1);
+}
+
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+// Função para escolher cor arco-íris por paleta
+function getRainbowColor() {
+  rainbowHue += 1;
+  switch(palette){
+    case "warm":
+      return `hsl(${(rainbowHue*2)%60+0}, 100%, 50%)`;
+    case "cool":
+      return `hsl(${180 + rainbowHue%180}, 80%, 60%)`;
+    case "neon":
+      const neonColors = ["#00ff00","#ff00ff","#00ffff"];
+      return neonColors[Math.floor((rainbowHue/5)%neonColors.length)];
+    default:
+      return `hsl(${rainbowHue % 360}, 100%, 50%)`;
+  }
+}
+
+function draw() {
+  ctx.fillStyle = "rgba(0,0,0,0.05)";
+  ctx.fillRect(0,0,c.width,c.height);
+
+  ctx.fillStyle = rainbow ? getRainbowColor() : rainColor;
+  ctx.font = `${fontSize}px monospace`;
+  for(let i=0;i<drops.length;i++){
+    const text = letters[Math.floor(Math.random()*letters.length)];
+    ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+    if(drops[i]*fontSize > c.height && Math.random()>0.95) drops[i]=0;
+    drops[i] += speed;
+  }
+  requestAnimationFrame(draw);
+}
+
+draw();
+
+// Painel interativo
+const colorPicker = document.getElementById("colorPicker");
+const fontSizeRange = document.getElementById("fontSizeRange");
+const speedRange = document.getElementById("speedRange");
+const densityRange = document.getElementById("densityRange");
+const rainbowMode = document.getElementById("rainbowMode");
+const paletteSelect = document.getElementById("paletteSelect");
+
+colorPicker.addEventListener("input", e=>rainColor=e.target.value);
+fontSizeRange.addEventListener("input", e=>{fontSize=parseInt(e.target.value); resizeCanvas();});
+speedRange.addEventListener("input", e=>speed=parseInt(e.target.value));
+densityRange.addEventListener("input", e=>{density=parseInt(e.target.value); resizeCanvas();});
+rainbowMode.addEventListener("change", e=>rainbow=e.target.checked);
+paletteSelect.addEventListener("change", e=>palette=e.target.value);
+
+// Clique adiciona mais gotas
+window.addEventListener("click", ()=>{drops.push(1,1,1);});
+
+// Botão abrir/fechar painel
+const toggleBtn = document.querySelector(".toggle-btn");
+const configPanel = document.getElementById("configPanel");
+toggleBtn.addEventListener("click", ()=>{configPanel.classList.toggle("hidden");});
+</script>
+
+</body>
+</html>
